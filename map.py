@@ -1,5 +1,7 @@
 import pygame
 from entities import Player
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(message)s')
 
 class Tile:
 
@@ -16,6 +18,21 @@ class Tile:
         # Draw the image
         self.parent_surface.blit(self.image, (self.rect.x, self.rect.y))
 
+class Box(Tile):
+
+    def __init__(self, x, y, image, parent_surface):
+        super().__init__(x, y, image, parent_surface)
+
+class Floor(Tile):
+
+    def __init__(self, x, y, image, parent_surface):
+        super().__init__(x, y, image, parent_surface)
+
+class Wall(Tile):
+    
+    def __init__(self, x, y, image, parent_surface):
+        super().__init__(x, y, image, parent_surface)
+
 class LevelMap:
     
     def __init__(self, level_file, parent_surface):
@@ -28,7 +45,7 @@ class LevelMap:
         self.start_x = 0
         self.start_y = 0
 
-        self.tiles = self.create_tiles()
+        self.tiles, self.boxes = self.create_tiles()
 
 
     def read_map_from_file(self):
@@ -48,26 +65,33 @@ class LevelMap:
 
     def create_tiles(self):
         tiles = []
+        boxes = []
         for y, row in enumerate(self.level_map):
-            # Create different tiles in right spots
+            # Create different tiles in starting positions
             for x, tile in enumerate(row):
                 if tile == '1':
-                    tiles.append(Tile(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/wall.png'), self.parent_surface))
+                    tiles.append(Wall(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/wall.png'), self.parent_surface))
                 if tile == '2':
-                    tiles.append(Tile(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
+                    tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
                 if tile == '3':
+                    tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
                     self.start_x, self.start_y = x*self.tile_size, y*self.tile_size
                 if tile == '4':
-                    tiles.append(Tile(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box.png'), self.parent_surface))
+                    tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
+                    box = Box(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box.png'), self.parent_surface)
+                    boxes.append(box)
                 if tile == '5':
                     tiles.append(Tile(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box_spot.png'), self.parent_surface))
 
-        return tiles
+        return tiles, boxes
 
     def draw_map(self):
         # Draw each tile according to its rect's position
         for tile in self.tiles:
             tile.draw_tile()
+        
+        for box in self.boxes:
+            box.draw_tile()
 
 # if __name__ == "__main__":
 #     level1 = LevelMap()
