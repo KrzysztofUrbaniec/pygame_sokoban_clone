@@ -22,6 +22,12 @@ class Box(Tile):
 
     def __init__(self, x, y, image, parent_surface):
         super().__init__(x, y, image, parent_surface)
+        self.state = False
+
+class BoxSpot(Tile):
+
+    def __init__(self, x, y, image, parent_surface):
+        super().__init__(x, y, image, parent_surface)
 
 class Floor(Tile):
 
@@ -81,7 +87,8 @@ class LevelMap:
                     box = Box(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box.png'), self.parent_surface)
                     boxes.append(box)
                 if tile == '5':
-                    tiles.append(Tile(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box_spot.png'), self.parent_surface))
+                    tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
+                    tiles.append(BoxSpot(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box_spot.png'), self.parent_surface))
 
         return tiles, boxes
 
