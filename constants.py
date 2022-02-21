@@ -10,3 +10,9 @@ FPS = 60
 # Colors
 #            R   G    B
 LIGHTBLUE = (153, 204, 255 )
+
+# Movement directions
+LEFT = 'left'
+RIGHT = 'right'
+UP = 'up'
+DOWN = 'down'

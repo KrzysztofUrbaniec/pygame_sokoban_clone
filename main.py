@@ -1,17 +1,12 @@
 import pygame, sys
 from pygame.locals import *
-from map import LevelMap, Floor, Box, Wall
+from map import LevelMap, Floor, Box, Wall, BoxSpot
 from constants import *
 from entities import Player
 import logging
 from debug import debug
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(message)s')
-
-LEFT = 'left'
-RIGHT = 'right'
-UP = 'up'
-DOWN = 'down'
 
 def main():
     global DISPLAYSURF, SCREENSURF, FPSCLOCK
@@ -32,6 +27,11 @@ def main():
         SCREENSURF.fill(LIGHTBLUE)
 
         direction = None
+        
+        # Set all box states to False at the beginning of the loop, so it the box was moved
+        # to right spot, but then was removed, the state won't stay as True
+        for box in level1.boxes:
+            box.state = False
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -81,6 +81,10 @@ def main():
                         box.rect.x -= level1.tile_size
                         player_rect.x -= level1.tile_size
 
+                if box.rect.colliderect(tile.rect) and isinstance(tile, BoxSpot):
+                    box.state = True
+                
+
         # Collisions with other tiles
         for rect in level1.tiles:
             if rect.x == player_rect.x and rect.y == player_rect.y and isinstance(rect, Wall):
@@ -92,10 +96,11 @@ def main():
                     player_rect.x += level1.tile_size
                 if direction == RIGHT:
                     player_rect.x -= level1.tile_size
-
-        # TODO: If box collides with boxspot - set box attribute 'in_right_spot' to True; if all boxes are in proper spots - player wins
         
-        # TODO: Add win conditions
+        # Check if all boxes are in proper spots
+        boxes_boolean = [box.state for box in level1.boxes]
+        if False not in boxes_boolean:
+            print("Victory")
 
         # TODO: Add level reset function
 
