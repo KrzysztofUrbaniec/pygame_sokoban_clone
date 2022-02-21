@@ -14,9 +14,9 @@ class Tile:
         # Set rect x & y to position on the grid, so the image will be rendered in proper place
         self.rect.x, self.rect.y = self.x, self.y
 
-    def draw_tile(self):
+    def draw_tile(self, camera):
         # Draw the image
-        self.parent_surface.blit(self.image, (self.rect.x, self.rect.y))
+        self.parent_surface.blit(self.image, (self.rect.x - camera[0], self.rect.y - camera[1]))
 
 class Box(Tile):
 
@@ -87,18 +87,17 @@ class LevelMap:
                     box = Box(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box.png'), self.parent_surface)
                     boxes.append(box)
                 if tile == '5':
-                    tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
                     tiles.append(BoxSpot(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box_spot.png'), self.parent_surface))
 
         return tiles, boxes
 
-    def draw_map(self):
+    def draw_map(self, camera):
         # Draw each tile according to its rect's position
         for tile in self.tiles:
-            tile.draw_tile()
+            tile.draw_tile(camera)
         
         for box in self.boxes:
-            box.draw_tile()
+            box.draw_tile(camera)
 
 # if __name__ == "__main__":
 #     level1 = LevelMap()
