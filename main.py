@@ -52,6 +52,8 @@ def main():
                 if event.key == K_DOWN:
                     player_rect.y += level1.tile_size
                     direction = DOWN
+                if event.key == K_r:
+                    reset_level(level1, player_rect)
 
         # Boxes movement
         for box in level1.boxes:
@@ -102,8 +104,6 @@ def main():
         if False not in boxes_boolean:
             print("Victory")
 
-        # TODO: Add level reset function
-
         level1.draw_map() 
 
         SCREENSURF.blit(player_img, player_rect)
@@ -113,6 +113,9 @@ def main():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def reset_level(level, player_rect):
+    level.tiles, level.boxes = level.create_tiles()
+    player_rect.x, player_rect.y = level.start_x, level.start_y
 
 if __name__ == '__main__':
     main()
