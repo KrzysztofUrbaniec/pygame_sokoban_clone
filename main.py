@@ -1,8 +1,7 @@
-import pygame, sys
+import pygame, sys, os
 from pygame.locals import *
-from map import LevelMap, Floor, Box, Wall, BoxSpot
+from map import LevelMap, Wall, BoxSpot
 from constants import *
-from entities import Player
 import logging
 from debug import debug
 
@@ -15,12 +14,79 @@ def main():
     pygame.display.set_caption('Sokoban')
     FPSCLOCK = pygame.time.Clock()
 
-    level1 = LevelMap('my_projects/sokoban/levels/level1.txt', SCREENSURF)
+    levels = load_levels("my_projects/sokoban/levels")
+    level_counter = 0
+    current_level = levels[level_counter]
+    while True:
+        run_level(current_level, levels, level_counter)
+        level_counter, current_level = next_level(levels, level_counter)
+    
+def next_level(levels, level_counter):
+    level_counter += 1
+    create_won_msg(levels, level_counter)
 
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_SPACE:
+                    if level_counter < len(levels):
+                        return level_counter, levels[level_counter]
+                    else:
+                        level_counter = 0
+                        # Reset positions of tiles for all levels
+                        for level in levels:
+                            level.tiles, level.boxes = level.create_tiles()
+                        return level_counter, levels[0]
+
+def create_won_msg(levels, level_counter):
+    text_font = pygame.font.SysFont('comicsans', 48)
+    if level_counter == len(levels):
+        congrats_text = text_font.render("Congratulations!", False, TEXT_COLOR, WHITE)    
+        completed_text = text_font.render("You completed all levels", False, TEXT_COLOR, WHITE)
+
+        congrats_text_rect = congrats_text.get_rect()
+        congrats_text_rect.centerx, congrats_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.4
+        congrats_text.set_colorkey(WHITE)
+
+        completed_text_rect = completed_text.get_rect()
+        completed_text_rect.centerx, completed_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.6
+        completed_text.set_colorkey(WHITE)
+
+        SCREENSURF.blit(congrats_text, congrats_text_rect)
+        SCREENSURF.blit(completed_text, completed_text_rect)
+    else:
+        won_text = text_font.render("You won!", False, TEXT_COLOR, WHITE)
+        won_text_rect = won_text.get_rect()
+        won_text_rect.centerx, won_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.5
+        won_text.set_colorkey(WHITE)
+        SCREENSURF.blit(won_text, won_text_rect)
+
+    create_press_spacebar_msg(levels, level_counter)
+
+    scaled_surf = pygame.transform.scale(SCREENSURF, DISPLAYSURF.get_size())
+    DISPLAYSURF.blit(scaled_surf, (0,0))
+    pygame.display.update()
+
+def create_press_spacebar_msg(levels, level_counter):
+    text_font = pygame.font.SysFont('comicsans', 24)
+    if level_counter == len(levels):
+        press_spacebar_text = text_font.render("Press spacebar to proceed to the first level", False, TEXT_COLOR, WHITE)
+    else:
+        press_spacebar_text = text_font.render("Press spacebar to proceed to the next level", False, TEXT_COLOR, WHITE)
+    press_spacebar_text_rect = press_spacebar_text.get_rect()
+    press_spacebar_text_rect.centerx, press_spacebar_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.9
+    press_spacebar_text.set_colorkey(WHITE)
+
+    SCREENSURF.blit(press_spacebar_text, press_spacebar_text_rect)
+
+def run_level(current_level, levels, level_counter):
     # Player
     player_img = pygame.image.load('my_projects/sokoban/images/player.png')
     player_rect = player_img.get_rect()
-    player_rect.x, player_rect.y = level1.start_x, level1.start_y
+    player_rect.x, player_rect.y = current_level.start_x, current_level.start_y
     player_step_count = 0
     
     while True:
@@ -30,7 +96,7 @@ def main():
         
         # Set all box states to False at the beginning of the loop, so it the box was moved
         # to right spot, but then was removed, the state won't stay as True
-        for box in level1.boxes:
+        for box in current_level.boxes:
             box.state = False
 
         for event in pygame.event.get():
@@ -41,111 +107,132 @@ def main():
             # Player movement and changing position
             if event.type == KEYDOWN:
                 if event.key == K_LEFT:
-                    player_rect.x -= level1.tile_size
+                    player_rect.x -= current_level.tile_size
                     direction = LEFT
                     player_step_count += 1
                 if event.key == K_RIGHT:
-                    player_rect.x += level1.tile_size
+                    player_rect.x += current_level.tile_size
                     direction = RIGHT
                     player_step_count += 1
                 if event.key == K_UP:
-                    player_rect.y -= level1.tile_size
+                    player_rect.y -= current_level.tile_size
                     direction = UP
                     player_step_count += 1
                 if event.key == K_DOWN:
-                    player_rect.y += level1.tile_size
+                    player_rect.y += current_level.tile_size
                     direction = DOWN
                     player_step_count += 1
                 if event.key == K_r:
-                    reset_level(level1, player_rect)
+                    reset_level(current_level, player_rect)
+                    player_step_count = 0
 
         # Boxes movement
-        for box in level1.boxes:
+        for box in current_level.boxes:
             if box.rect.x == player_rect.x and box.rect.y == player_rect.y:
                 if direction == DOWN:
-                    box.rect.y += level1.tile_size
+                    box.rect.y += current_level.tile_size
                 if direction == UP:
-                    box.rect.y -= level1.tile_size
+                    box.rect.y -= current_level.tile_size
                 if direction == LEFT:
-                    box.rect.x -= level1.tile_size
+                    box.rect.x -= current_level.tile_size
                 if direction == RIGHT:
-                    box.rect.x += level1.tile_size
+                    box.rect.x += current_level.tile_size
 
             # Check if moved box collides with walls - if yes, then return in to previous position
-            for tile in level1.tiles:
+            for tile in current_level.tiles:
                 if box.rect.x == tile.rect.x and box.rect.y == tile.rect.y and isinstance(tile, Wall):
                     if direction == DOWN:
-                        box.rect.y -= level1.tile_size
-                        player_rect.y -= level1.tile_size
+                        box.rect.y -= current_level.tile_size
+                        player_rect.y -= current_level.tile_size
                     if direction == UP:
-                        box.rect.y += level1.tile_size
-                        player_rect.y += level1.tile_size
+                        box.rect.y += current_level.tile_size
+                        player_rect.y += current_level.tile_size
                     if direction == LEFT:
-                        box.rect.x += level1.tile_size
-                        player_rect.x += level1.tile_size
+                        box.rect.x += current_level.tile_size
+                        player_rect.x += current_level.tile_size
                     if direction == RIGHT:
-                        box.rect.x -= level1.tile_size
-                        player_rect.x -= level1.tile_size
+                        box.rect.x -= current_level.tile_size
+                        player_rect.x -= current_level.tile_size
 
                 if box.rect.colliderect(tile.rect) and isinstance(tile, BoxSpot):
                     box.state = True
 
             # Check if currently moving box collides with other box
-            for box2 in level1.boxes:
+            for box2 in current_level.boxes:
                 if box.rect.x == box2.rect.x and box.rect.y == box2.rect.y and box is not box2:
                     if direction == DOWN:
-                        box.rect.y -= level1.tile_size
-                        player_rect.y -= level1.tile_size
+                        box.rect.y -= current_level.tile_size
+                        player_rect.y -= current_level.tile_size
                     if direction == UP:
-                        box.rect.y += level1.tile_size
-                        player_rect.y += level1.tile_size
+                        box.rect.y += current_level.tile_size
+                        player_rect.y += current_level.tile_size
                     if direction == LEFT:
-                        box.rect.x += level1.tile_size
-                        player_rect.x += level1.tile_size
+                        box.rect.x += current_level.tile_size
+                        player_rect.x += current_level.tile_size
                     if direction == RIGHT:
-                        box.rect.x -= level1.tile_size
-                        player_rect.x -= level1.tile_size    
+                        box.rect.x -= current_level.tile_size
+                        player_rect.x -= current_level.tile_size    
 
         # Collisions with other tiles
-        for rect in level1.tiles:
+        for rect in current_level.tiles:
             if rect.x == player_rect.x and rect.y == player_rect.y and isinstance(rect, Wall):
                 if direction == DOWN:
-                    player_rect.y -= level1.tile_size
+                    player_rect.y -= current_level.tile_size
                 if direction == UP:
-                    player_rect.y += level1.tile_size
+                    player_rect.y += current_level.tile_size
                 if direction == LEFT:
-                    player_rect.x += level1.tile_size
+                    player_rect.x += current_level.tile_size
                 if direction == RIGHT:
-                    player_rect.x -= level1.tile_size
-        
-        # Check if all boxes are in proper spots
-        boxes_boolean = [box.state for box in level1.boxes]
-        if False not in boxes_boolean:
-            print("Victory")
+                    player_rect.x -= current_level.tile_size
 
         # Scroll variables
         cameraX = player_rect.x - SCREENSURF_WIDTH // 2
         cameraY = player_rect.y - SCREENSURF_HEIGHT // 2
 
-        level1.draw_map((cameraX, cameraY)) 
+        current_level.draw_map((cameraX, cameraY)) 
 
         SCREENSURF.blit(player_img, (player_rect.x - cameraX, player_rect.y - cameraY))
         create_step_count_label(player_step_count)
+        create_level_label(levels, level_counter)
         
         scaled_surf = pygame.transform.scale(SCREENSURF, DISPLAYSURF.get_size())
         DISPLAYSURF.blit(scaled_surf, (0,0))
+
+        # Check if all boxes are in proper spots
+        boxes_boolean = [box.state for box in current_level.boxes]
+        if False not in boxes_boolean:
+            pygame.display.update()
+            return
+
         pygame.display.update()
         FPSCLOCK.tick(FPS)
+
+def load_levels(path_to_level_directory):
+    levels = []
+    for level in os.listdir(path_to_level_directory):
+        levels.append(LevelMap(os.path.join(path_to_level_directory, level), SCREENSURF))
+
+    return levels
 
 def reset_level(level, player_rect):
     level.tiles, level.boxes = level.create_tiles()
     player_rect.x, player_rect.y = level.start_x, level.start_y
 
+def create_level_label(levels, level_counter):
+    text_font = pygame.font.SysFont('comicsans', 18)
+    level_text = text_font.render(f'Level {level_counter + 1} of {len(levels)}', False, TEXT_COLOR, WHITE)
+    level_text_rect = level_text.get_rect()
+    level_text_rect.centerx, level_text_rect.centery = SCREENSURF_WIDTH * 0.12, SCREENSURF_HEIGHT * 0.05
+    level_text.set_colorkey(WHITE)
+    SCREENSURF.blit(level_text, level_text_rect)
+
 def create_step_count_label(player_step_count):
     text_font = pygame.font.SysFont('comicsans', 18)
-    count_text = text_font.render(f'Step count: {player_step_count}', True, TEXT_COLOR, TEXT_COLOR)
+    count_text = text_font.render(f'Step count: {player_step_count}', False, TEXT_COLOR, WHITE)
+    count_text_rect = count_text.get_rect()
+    count_text_rect.centerx, count_text_rect.centery = SCREENSURF_WIDTH * 0.12, SCREENSURF_HEIGHT * 0.10
     count_text.set_colorkey(WHITE)
-    SCREENSURF.blit(count_text, (SCREENSURF_WIDTH*0.04, SCREENSURF_HEIGHT*0.95))
+    SCREENSURF.blit(count_text, count_text_rect)
 
 if __name__ == '__main__':
     main()
