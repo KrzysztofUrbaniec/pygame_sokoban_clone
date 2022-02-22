@@ -18,12 +18,13 @@ def main():
     level_counter = 0
     current_level = levels[level_counter]
     while True:
-        run_level(current_level, levels, level_counter)
-        level_counter, current_level = next_level(levels, level_counter)
+        level_counter, level_passed = run_level(current_level, levels, level_counter)
+        level_counter, current_level = next_level(levels, level_counter, level_passed)
     
-def next_level(levels, level_counter):
-    level_counter += 1
-    create_won_msg(levels, level_counter)
+def next_level(levels, level_counter, level_passed):
+
+    if level_passed:
+        create_won_msg(levels, level_counter)
 
     while True:
         for event in pygame.event.get():
@@ -33,6 +34,8 @@ def next_level(levels, level_counter):
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
                     if level_counter < len(levels):
+                        for level in levels:
+                            level.tiles, level.boxes = level.create_tiles()
                         return level_counter, levels[level_counter]
                     else:
                         level_counter = 0
@@ -40,6 +43,24 @@ def next_level(levels, level_counter):
                         for level in levels:
                             level.tiles, level.boxes = level.create_tiles()
                         return level_counter, levels[0]
+        
+        if not level_passed:
+            if level_counter == len(levels):
+                level_counter = 0
+                # Reset positions of tiles for all levels
+                for level in levels:
+                    level.tiles, level.boxes = level.create_tiles()
+                return level_counter, levels[0]
+            elif level_counter < 0:
+                level_counter = len(levels) - 1
+                for level in levels:
+                    level.tiles, level.boxes = level.create_tiles()
+                return level_counter, levels[level_counter]
+            elif level_counter < len(levels):
+                        for level in levels:
+                            level.tiles, level.boxes = level.create_tiles()
+                        return level_counter, levels[level_counter]
+
 
 def run_level(current_level, levels, level_counter):
     # Player
@@ -49,6 +70,8 @@ def run_level(current_level, levels, level_counter):
     player_rect.x, player_rect.y = current_level.start_x, current_level.start_y
     player_step_count = 0
     
+    level_passed = False
+
     while True:
         SCREENSURF.fill(LIGHTBLUE)
 
@@ -85,6 +108,10 @@ def run_level(current_level, levels, level_counter):
                 if event.key == K_r:
                     reset_level(current_level, player_rect)
                     player_step_count = 0
+                if event.key == K_e:
+                    return level_counter + 1, level_passed
+                if event.key == K_q:
+                    return level_counter - 1, level_passed
 
         # Boxes movement
         for box in current_level.boxes:
@@ -174,7 +201,8 @@ def run_level(current_level, levels, level_counter):
         boxes_boolean = [box.state for box in current_level.boxes]
         if False not in boxes_boolean:
             pygame.display.update()
-            return
+            level_passed = True
+            return level_counter + 1, level_passed
 
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -197,26 +225,26 @@ def reset_level(level, player_rect):
 
 def create_won_msg(levels, level_counter):
     text_font = pygame.font.SysFont('comicsans', 48)
-    if level_counter == len(levels):
-        congrats_text = text_font.render("Congratulations!", False, TEXT_COLOR, WHITE)    
-        completed_text = text_font.render("You completed all levels", False, TEXT_COLOR, WHITE)
+    # if level_counter == len(levels):
+    #     congrats_text = text_font.render("Congratulations!", False, TEXT_COLOR, WHITE)    
+    #     completed_text = text_font.render("You completed all levels", False, TEXT_COLOR, WHITE)
 
-        congrats_text_rect = congrats_text.get_rect()
-        congrats_text_rect.centerx, congrats_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.4
-        congrats_text.set_colorkey(WHITE)
+    #     congrats_text_rect = congrats_text.get_rect()
+    #     congrats_text_rect.centerx, congrats_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.4
+    #     congrats_text.set_colorkey(WHITE)
 
-        completed_text_rect = completed_text.get_rect()
-        completed_text_rect.centerx, completed_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.6
-        completed_text.set_colorkey(WHITE)
+    #     completed_text_rect = completed_text.get_rect()
+    #     completed_text_rect.centerx, completed_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.6
+    #     completed_text.set_colorkey(WHITE)
 
-        SCREENSURF.blit(congrats_text, congrats_text_rect)
-        SCREENSURF.blit(completed_text, completed_text_rect)
-    else:
-        won_text = text_font.render("You won!", False, TEXT_COLOR, WHITE)
-        won_text_rect = won_text.get_rect()
-        won_text_rect.centerx, won_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.5
-        won_text.set_colorkey(WHITE)
-        SCREENSURF.blit(won_text, won_text_rect)
+    #     SCREENSURF.blit(congrats_text, congrats_text_rect)
+    #     SCREENSURF.blit(completed_text, completed_text_rect)
+    # else:
+    won_text = text_font.render("You won!", False, TEXT_COLOR, WHITE)
+    won_text_rect = won_text.get_rect()
+    won_text_rect.centerx, won_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.5
+    won_text.set_colorkey(WHITE)
+    SCREENSURF.blit(won_text, won_text_rect)
 
     create_press_spacebar_msg(levels, level_counter)
 
@@ -238,6 +266,7 @@ def create_press_spacebar_msg(levels, level_counter):
 
 def create_level_label(levels, level_counter):
     text_font = pygame.font.SysFont('comicsans', 18)
+    logging.debug(level_counter)
     level_text = text_font.render(f'Level {level_counter + 1} of {len(levels)}', False, TEXT_COLOR, WHITE)
     level_text_rect = level_text.get_rect()
     level_text_rect.centerx, level_text_rect.centery = SCREENSURF_WIDTH * 0.12, SCREENSURF_HEIGHT * 0.05
