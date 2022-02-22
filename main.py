@@ -41,50 +41,10 @@ def next_level(levels, level_counter):
                             level.tiles, level.boxes = level.create_tiles()
                         return level_counter, levels[0]
 
-def create_won_msg(levels, level_counter):
-    text_font = pygame.font.SysFont('comicsans', 48)
-    if level_counter == len(levels):
-        congrats_text = text_font.render("Congratulations!", False, TEXT_COLOR, WHITE)    
-        completed_text = text_font.render("You completed all levels", False, TEXT_COLOR, WHITE)
-
-        congrats_text_rect = congrats_text.get_rect()
-        congrats_text_rect.centerx, congrats_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.4
-        congrats_text.set_colorkey(WHITE)
-
-        completed_text_rect = completed_text.get_rect()
-        completed_text_rect.centerx, completed_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.6
-        completed_text.set_colorkey(WHITE)
-
-        SCREENSURF.blit(congrats_text, congrats_text_rect)
-        SCREENSURF.blit(completed_text, completed_text_rect)
-    else:
-        won_text = text_font.render("You won!", False, TEXT_COLOR, WHITE)
-        won_text_rect = won_text.get_rect()
-        won_text_rect.centerx, won_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.5
-        won_text.set_colorkey(WHITE)
-        SCREENSURF.blit(won_text, won_text_rect)
-
-    create_press_spacebar_msg(levels, level_counter)
-
-    scaled_surf = pygame.transform.scale(SCREENSURF, DISPLAYSURF.get_size())
-    DISPLAYSURF.blit(scaled_surf, (0,0))
-    pygame.display.update()
-
-def create_press_spacebar_msg(levels, level_counter):
-    text_font = pygame.font.SysFont('comicsans', 24)
-    if level_counter == len(levels):
-        press_spacebar_text = text_font.render("Press spacebar to proceed to the first level", False, TEXT_COLOR, WHITE)
-    else:
-        press_spacebar_text = text_font.render("Press spacebar to proceed to the next level", False, TEXT_COLOR, WHITE)
-    press_spacebar_text_rect = press_spacebar_text.get_rect()
-    press_spacebar_text_rect.centerx, press_spacebar_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.9
-    press_spacebar_text.set_colorkey(WHITE)
-
-    SCREENSURF.blit(press_spacebar_text, press_spacebar_text_rect)
-
 def run_level(current_level, levels, level_counter):
     # Player
     player_img = pygame.image.load('my_projects/sokoban/images/player.png')
+    player_img.set_colorkey(WHITE)
     player_rect = player_img.get_rect()
     player_rect.x, player_rect.y = current_level.start_x, current_level.start_y
     player_step_count = 0
@@ -144,15 +104,19 @@ def run_level(current_level, levels, level_counter):
                     if direction == DOWN:
                         box.rect.y -= current_level.tile_size
                         player_rect.y -= current_level.tile_size
+                        player_step_count -= 1
                     if direction == UP:
                         box.rect.y += current_level.tile_size
                         player_rect.y += current_level.tile_size
+                        player_step_count -= 1
                     if direction == LEFT:
                         box.rect.x += current_level.tile_size
                         player_rect.x += current_level.tile_size
+                        player_step_count -= 1
                     if direction == RIGHT:
                         box.rect.x -= current_level.tile_size
                         player_rect.x -= current_level.tile_size
+                        player_step_count -= 1
 
                 if box.rect.colliderect(tile.rect) and isinstance(tile, BoxSpot):
                     box.state = True
@@ -163,27 +127,35 @@ def run_level(current_level, levels, level_counter):
                     if direction == DOWN:
                         box.rect.y -= current_level.tile_size
                         player_rect.y -= current_level.tile_size
+                        player_step_count -= 1
                     if direction == UP:
                         box.rect.y += current_level.tile_size
                         player_rect.y += current_level.tile_size
+                        player_step_count -= 1
                     if direction == LEFT:
                         box.rect.x += current_level.tile_size
                         player_rect.x += current_level.tile_size
+                        player_step_count -= 1
                     if direction == RIGHT:
                         box.rect.x -= current_level.tile_size
                         player_rect.x -= current_level.tile_size    
+                        player_step_count -= 1
 
         # Collisions with other tiles
         for rect in current_level.tiles:
             if rect.x == player_rect.x and rect.y == player_rect.y and isinstance(rect, Wall):
                 if direction == DOWN:
                     player_rect.y -= current_level.tile_size
+                    player_step_count -= 1
                 if direction == UP:
                     player_rect.y += current_level.tile_size
+                    player_step_count -= 1
                 if direction == LEFT:
                     player_rect.x += current_level.tile_size
+                    player_step_count -= 1
                 if direction == RIGHT:
                     player_rect.x -= current_level.tile_size
+                    player_step_count -= 1
 
         # Scroll variables
         cameraX = player_rect.x - SCREENSURF_WIDTH // 2
@@ -208,15 +180,61 @@ def run_level(current_level, levels, level_counter):
         FPSCLOCK.tick(FPS)
 
 def load_levels(path_to_level_directory):
-    levels = []
-    for level in os.listdir(path_to_level_directory):
-        levels.append(LevelMap(os.path.join(path_to_level_directory, level), SCREENSURF))
+    levels = [level for level in os.listdir(path_to_level_directory)]
+    file_count = len(levels)
+    map_levels = []
+    for level_number in range(1, file_count+1):
+        level_name = 'level' + '_' + str(level_number) + '.txt'
+        level = os.path.join(path_to_level_directory, level_name)
+        logging.debug(level)
+        map_levels.append(LevelMap(level, SCREENSURF))
 
-    return levels
+    return map_levels
 
 def reset_level(level, player_rect):
     level.tiles, level.boxes = level.create_tiles()
     player_rect.x, player_rect.y = level.start_x, level.start_y
+
+def create_won_msg(levels, level_counter):
+    text_font = pygame.font.SysFont('comicsans', 48)
+    if level_counter == len(levels):
+        congrats_text = text_font.render("Congratulations!", False, TEXT_COLOR, WHITE)    
+        completed_text = text_font.render("You completed all levels", False, TEXT_COLOR, WHITE)
+
+        congrats_text_rect = congrats_text.get_rect()
+        congrats_text_rect.centerx, congrats_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.4
+        congrats_text.set_colorkey(WHITE)
+
+        completed_text_rect = completed_text.get_rect()
+        completed_text_rect.centerx, completed_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.6
+        completed_text.set_colorkey(WHITE)
+
+        SCREENSURF.blit(congrats_text, congrats_text_rect)
+        SCREENSURF.blit(completed_text, completed_text_rect)
+    else:
+        won_text = text_font.render("You won!", False, TEXT_COLOR, WHITE)
+        won_text_rect = won_text.get_rect()
+        won_text_rect.centerx, won_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.5
+        won_text.set_colorkey(WHITE)
+        SCREENSURF.blit(won_text, won_text_rect)
+
+    create_press_spacebar_msg(levels, level_counter)
+
+    scaled_surf = pygame.transform.scale(SCREENSURF, DISPLAYSURF.get_size())
+    DISPLAYSURF.blit(scaled_surf, (0,0))
+    pygame.display.update()
+
+def create_press_spacebar_msg(levels, level_counter):
+    text_font = pygame.font.SysFont('comicsans', 24)
+    if level_counter == len(levels):
+        press_spacebar_text = text_font.render("Press spacebar to proceed to the first level", False, TEXT_COLOR, WHITE)
+    else:
+        press_spacebar_text = text_font.render("Press spacebar to proceed to the next level", False, TEXT_COLOR, WHITE)
+    press_spacebar_text_rect = press_spacebar_text.get_rect()
+    press_spacebar_text_rect.centerx, press_spacebar_text_rect.centery = SCREENSURF_WIDTH * 0.5, SCREENSURF_HEIGHT * 0.9
+    press_spacebar_text.set_colorkey(WHITE)
+
+    SCREENSURF.blit(press_spacebar_text, press_spacebar_text_rect)
 
 def create_level_label(levels, level_counter):
     text_font = pygame.font.SysFont('comicsans', 18)
