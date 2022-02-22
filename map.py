@@ -1,6 +1,7 @@
 import pygame
-from entities import Player
 import logging
+from constants import *
+
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(message)s')
 
 class Tile:
@@ -75,19 +76,21 @@ class LevelMap:
         for y, row in enumerate(self.level_map):
             # Create different tiles in starting positions
             for x, tile in enumerate(row):
-                if tile == '1':
+                if tile == '#':
                     tiles.append(Wall(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/wall.png'), self.parent_surface))
-                if tile == '2':
+                if tile == ' ':
                     tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
-                if tile == '3':
+                if tile == '@':
                     tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
                     self.start_x, self.start_y = x*self.tile_size, y*self.tile_size
-                if tile == '4':
+                if tile == '$':
                     tiles.append(Floor(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/floor.png'), self.parent_surface))
                     box = Box(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box.png'), self.parent_surface)
                     boxes.append(box)
-                if tile == '5':
-                    tiles.append(BoxSpot(x*self.tile_size, y*self.tile_size, pygame.image.load('my_projects/sokoban/images/box_spot.png'), self.parent_surface))
+                if tile == '.':
+                    box_spot_img = pygame.image.load('my_projects/sokoban/images/box_spot.png')
+                    box_spot_img.set_colorkey(WHITE)
+                    tiles.append(BoxSpot(x*self.tile_size, y*self.tile_size, box_spot_img, self.parent_surface))
 
         return tiles, boxes
 
